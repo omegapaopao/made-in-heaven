@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         made in heaven
 // @namespace    https://github.com/omegapaopao/made-in-heaven
-// @version      1.1.0
+// @version      1.2.0
 // @description  网页视频倍速控制 — 自动识别视频，精致面板，快捷键操控。
 // @author       omegapaopao
 // @match        *://*/*
@@ -102,7 +102,7 @@
   // ── 倍速控制 ──────────────────────────────
   function setSpeed(r) {
     r = Math.round(r * 100) / 100;
-    r = Math.max(0.1, Math.min(16, r));
+    r = Math.max(0.1, Math.min(50, r));
     CFG.speed = r;
     var el = curEl();
     if (el) el.playbackRate = r;
@@ -243,7 +243,7 @@
           '<div class="mih-row" id="mih-presets">' + presetBtns + '</div>' +
           // 自定义倍速输入
           '<div id="mih-custom-row">' +
-            '<input id="mih-custom" type="number" step="0.01" min="0.1" max="16" placeholder="输入任意倍速后回车..." title="输入任意倍速后按回车确认">' +
+            '<input id="mih-custom" type="number" step="0.01" min="0.1" max="50" placeholder="输入任意倍速后回车..." title="输入任意倍速后按回车确认">' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -279,7 +279,7 @@
     panel.querySelector('#mih-custom').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
         var val = parseFloat(this.value);
-        if (isFinite(val) && val >= 0.1 && val <= 16) {
+        if (isFinite(val) && val >= 0.1 && val <= 50) {
           setSpeed(val);
         }
         this.value = '';
@@ -399,7 +399,7 @@
   // ╚══════════════════════════════════════════╝
 
   function init() {
-    log('made in heaven v1.1.0 — by omegapaopao');
+    log('made in heaven v1.2.0 — by omegapaopao');
 
     // 注入样式
     var css = document.createElement('style');
