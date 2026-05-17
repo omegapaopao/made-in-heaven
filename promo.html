@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>made in heaven — Promo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #000;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; overflow: hidden;
+    font-family: "PingFang SC", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  }
+
+  .phone {
+    width: 390px; height: 844px;
+    background: #0a0a0f;
+    position: relative; overflow: hidden;
+    border-radius: 24px;
+  }
+
+  /* ── 场景容器 ── */
+  .scene {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 28px;
+    opacity: 0; transform: scale(0.96);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+  }
+  .scene.active {
+    opacity: 1; transform: scale(1);
+    pointer-events: auto;
+  }
+
+  /* ── 点阵背景 ── */
+  #bg-canvas {
+    position: absolute; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Scene 1: Logo ── */
+  .logo-icon {
+    font-size: 64px; margin-bottom: 16px;
+  }
+  .logo-text {
+    font-size: 36px; font-weight: 800;
+    background: linear-gradient(135deg, #c084fc, #a78bfa, #818cf8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+  }
+  .logo-sub {
+    margin-top: 8px;
+    font-size: 16px; color: rgba(200,200,212,0.5);
+    text-align: center;
+  }
+
+  /* ── Scene 2: Problem ── */
+  .big-num {
+    font-size: 96px; font-weight: 900;
+    background: linear-gradient(135deg, #f87171, #fb923c);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .big-num.green {
+    background: linear-gradient(135deg, #34d399, #22d3ee);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .scene-label {
+    font-size: 18px; color: rgba(200,200,212,0.5);
+    text-align: center; margin-top: 12px;
+    line-height: 1.6;
+  }
+
+  /* ── Scene 3: Feature ── */
+  .feature-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin-bottom: 12px;
+    width: 100%;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .feature-icon {
+    font-size: 32px; flex-shrink: 0;
+  }
+  .feature-info h3 {
+    font-size: 15px; font-weight: 700; color: #e8e4f0;
+    margin-bottom: 2px;
+  }
+  .feature-info p {
+    font-size: 12px; color: rgba(200,200,212,0.4);
+  }
+
+  /* ── Scene 4: Shortcuts ── */
+  .kbd-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; width: 100%;
+  }
+  .kbd-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .kbd-key {
+    font-family: "SF Mono", "Cascadia Code", monospace;
+    font-size: 14px; font-weight: 700;
+    color: #c4b5fd;
+    background: rgba(167,139,250,0.1);
+    padding: 3px 8px; border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .kbd-desc {
+    font-size: 11px; color: rgba(200,200,212,0.5);
+  }
+
+  /* ── Scene 5: CTA ── */
+  .url-box {
+    background: rgba(167,139,250,0.06);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+    word-break: break-all;
+  }
+  .url-box code {
+    font-family: "SF Mono", monospace;
+    font-size: 13px;
+    color: #c4b5fd;
+    line-height: 1.6;
+  }
+
+  /* ── 进度条 ── */
+  .progress-bar {
+    position: absolute; bottom: 20px; left: 28px; right: 28px;
+    height: 3px; background: rgba(255,255,255,0.06);
+    border-radius: 2px; z-index: 10;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, #a78bfa, #818cf8);
+    width: 0%;
+    transition: width 0.3s linear;
+  }
+
+  /* ── 动画辅助 ── */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .float { animation: float 3s ease-in-out infinite; }
+
+  @keyframes popIn {
+    0% { opacity: 0; transform: scale(0.8); }
+    60% { transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .pop-in { animation: popIn 0.5s ease-out forwards; }
+
+  @keyframes slideUp {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .slide-up {
+    opacity: 0; animation: slideUp 0.5s ease-out forwards;
+  }
+  .delay-1 { animation-delay: 0.2s; }
+  .delay-2 { animation-delay: 0.4s; }
+  .delay-3 { animation-delay: 0.6s; }
+  .delay-4 { animation-delay: 0.8s; }
+
+  .restart-btn {
+    position: absolute; top: 16px; right: 20px; z-index: 20;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.4); font-size: 12px;
+    padding: 6px 14px; border-radius: 14px; cursor: pointer;
+  }
+  .restart-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <canvas id="bg-canvas"></canvas>
+  <button class="restart-btn" onclick="restart()">重播</button>
+
+  <!-- Scene 0: 点阵背景 Canvas (decorative) -->
+
+  <!-- Scene 1: Logo -->
+  <div class="scene" id="s1">
+    <div class="logo-icon float">⚡</div>
+    <div class="logo-text pop-in">made in heaven</div>
+    <div class="logo-sub slide-up delay-2">次世代网页视频倍速引擎</div>
+    <div class="logo-sub slide-up delay-3" style="font-size:13px;margin-top:24px;color:rgba(200,200,212,0.3);">by omegapaopao</div>
+  </div>
+
+  <!-- Scene 2: Problem -->
+  <div class="scene" id="s2">
+    <div style="font-size:14px;color:rgba(200,200,212,0.35);margin-bottom:8px;">浏览器视频倍速上限</div>
+    <div class="big-num pop-in">16×</div>
+    <div class="scene-label slide-up delay-1">
+      所有浏览器的<br><code style="color:#c4b5fd;">playbackRate</code> 被硬编码锁定
+    </div>
+    <div class="scene-label slide-up delay-3" style="margin-top:24px;color:#f87171;">
+      这意味着你无法用超过 16 倍速看视频
+    </div>
+  </div>
+
+  <!-- Scene 3: Breakthrough -->
+  <div class="scene" id="s3">
+    <div style="font-size:14px;color:rgba(200,200,212,0.35);margin-bottom:8px;">made in heaven 突破上限</div>
+    <div class="big-num green pop-in">50×</div>
+    <div class="scene-label slide-up delay-1">
+      Turbo 引擎自动接管<br>
+      Canvas 帧跳进 + 自适应补偿算法
+    </div>
+    <div class="scene-label slide-up delay-3" style="margin-top:20px;color:#34d399;">
+      原生 ≤16× · Turbo 16×–50×<br>无缝智能切换
+    </div>
+  </div>
+
+  <!-- Scene 4: Features -->
+  <div class="scene" id="s4">
+    <div style="font-size:16px;font-weight:700;color:#e8e4f0;margin-bottom:20px;text-align:center;">全部功能</div>
+    <div class="kbd-grid">
+      <div class="kbd-item slide-up delay-1"><span class="kbd-key">Space</span><span class="kbd-desc">播放/暂停</span></div>
+      <div class="kbd-item slide-up delay-1"><span class="kbd-key">↑↓</span><span class="kbd-desc">倍速±0.25</span></div>
+      <div class="kbd-item slide-up delay-2"><span class="kbd-key">1 2 3 5</span><span class="kbd-desc">预设倍速</span></div>
+      <div class="kbd-item slide-up delay-2"><span class="kbd-key">F</span><span class="kbd-desc">全屏</span></div>
+      <div class="kbd-item slide-up delay-3"><span class="kbd-key">P</span><span class="kbd-desc">画中画</span></div>
+      <div class="kbd-item slide-up delay-3"><span class="kbd-key">M</span><span class="kbd-desc">静音</span></div>
+      <div class="kbd-item slide-up delay-4"><span class="kbd-key">←→</span><span class="kbd-desc">快进/退</span></div>
+      <div class="kbd-item slide-up delay-4"><span class="kbd-key">自定义</span><span class="kbd-desc">任意倍速</span></div>
+    </div>
+    <div class="scene-label slide-up delay-4" style="margin-top:16px;font-size:13px;">
+      🎨 毛玻璃面板 · 可拖拽 · 悬浮球恢复 · 零依赖 19KB
+    </div>
+  </div>
+
+  <!-- Scene 5: Install -->
+  <div class="scene" id="s5">
+    <div style="font-size:18px;font-weight:700;color:#e8e4f0;margin-bottom:8px;">三步安装</div>
+    <div style="font-size:13px;color:rgba(200,200,212,0.4);margin-bottom:28px;text-align:center;">
+      ① 装 Tampermonkey<br>
+      ② 点安装链接<br>
+      ③ 刷新网页 ← 搞定
+    </div>
+    <div class="url-box slide-up delay-2">
+      <code>github.com/omegapaopao<br>/made-in-heaven</code>
+    </div>
+    <div class="scene-label slide-up delay-3" style="margin-top:20px;font-size:15px;color:#a78bfa;font-weight:600;">
+      完全免费 · 开源 · MIT
+    </div>
+  </div>
+
+  <!-- Scene 6: Outro -->
+  <div class="scene" id="s6">
+    <div class="logo-icon float">⚡</div>
+    <div class="logo-text pop-in">made in heaven</div>
+    <div class="logo-sub slide-up delay-1">0.1× — 50×</div>
+    <div class="logo-sub slide-up delay-2" style="margin-top:32px;color:rgba(200,200,212,0.4);">
+      Tampermonkey 一键安装<br>
+      全平台通杀 · 完全免费
+    </div>
+    <div class="logo-sub slide-up delay-3" style="margin-top:20px;font-size:13px;color:rgba(167,139,250,0.5);">
+      omegapaopao.github.io/made-in-heaven
+    </div>
+  </div>
+
+  <!-- 进度条 -->
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+</div>
+
+<script>
+(function() {
+  // ── 背景点阵 (轻量版) ──
+  var canvas = document.getElementById('bg-canvas');
+  var ctx = canvas.getContext('2d');
+  var W = 390, H = 844;
+  var dots = [];
+  var SPACING = 36;
+  var time = 0;
+
+  function initDots() {
+    dots = [];
+    var cols = Math.ceil(W / SPACING) + 1;
+    var rows = Math.ceil(H / SPACING) + 1;
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        dots.push({
+          ox: c * SPACING, oy: r * SPACING,
+          x: c * SPACING, y: r * SPACING,
+          life: Math.random() * Math.PI * 2
+        });
+      }
+    }
+  }
+
+  function resizeBg() {
+    var phone = document.getElementById('phone');
+    var rect = phone.getBoundingClientRect();
+    W = canvas.width = rect.width;
+    H = canvas.height = rect.height;
+    initDots();
+  }
+
+  resizeBg();
+  window.addEventListener('resize', resizeBg);
+
+  function drawBg() {
+    ctx.clearRect(0, 0, W, H);
+    time += 0.005;
+    for (var i = 0; i < dots.length; i++) {
+      var d = dots[i];
+      d.life += 0.004;
+      d.x = d.ox + Math.sin(d.life * 1.3 + d.oy * 0.01) * 0.8;
+      d.y = d.oy + Math.cos(d.life * 1.7 + d.ox * 0.01) * 0.8;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, 0.8, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(167,139,250,0.08)';
+      ctx.fill();
+    }
+    requestAnimationFrame(drawBg);
+  }
+  requestAnimationFrame(drawBg);
+
+  // ── 场景切换 ──
+  var scenes = ['s1','s2','s3','s4','s5','s6'];
+  var durations = [3500, 4000, 4500, 5500, 4500, 4000];
+  var current = -1;
+  var timer = null;
+  var startTime = 0;
+  var totalDuration = 0;
+
+  for (var di = 0; di < durations.length; di++) {
+    totalDuration += durations[di];
+  }
+
+  function showScene(index) {
+    for (var si = 0; si < scenes.length; si++) {
+      var el = document.getElementById(scenes[si]);
+      el.classList.remove('active');
+      // 重置动画元素
+      var anims = el.querySelectorAll('.pop-in, .slide-up');
+      for (var ai = 0; ai < anims.length; ai++) {
+        anims[ai].style.animation = 'none';
+        anims[ai].offsetHeight; // reflow
+        anims[ai].style.animation = '';
+      }
+    }
+    var active = document.getElementById(scenes[index]);
+    active.classList.add('active');
+    current = index;
+  }
+
+  function updateProgress() {
+    var elapsed = Date.now() - startTime;
+    var t = 0;
+    for (var di = 0; di <= current; di++) {
+      if (di === current) {
+        var sceneStart = 0;
+        for (var sj = 0; sj < current; sj++) sceneStart += durations[sj];
+        var sceneElapsed = elapsed - sceneStart;
+        t = sceneElapsed / durations[current];
+        t = Math.max(0, Math.min(1, t));
+      }
+    }
+    var overall = 0;
+    for (var dk = 0; dk < current; dk++) overall += durations[dk] / totalDuration;
+    overall += (t * durations[current]) / totalDuration;
+    document.getElementById('progress').style.width = (overall * 100) + '%';
+  }
+
+  function nextScene() {
+    var next = (current + 1) % scenes.length;
+    if (next === 0) {
+      // 循环: 重置动画
+      for (var si = 0; si < scenes.length; si++) {
+        var el = document.getElementById(scenes[si]);
+        var anims = el.querySelectorAll('.pop-in, .slide-up');
+        for (var ai = 0; ai < anims.length; ai++) {
+          anims[ai].style.animation = 'none';
+          anims[ai].offsetHeight;
+          anims[ai].style.animation = '';
+        }
+      }
+    }
+    showScene(next);
+    startTime = Date.now();
+    computeStartTime();
+    timer = setTimeout(nextScene, durations[next]);
+  }
+
+  function computeStartTime() {
+    // recalculate startTime accounting for which scene we're on
+    var past = 0;
+    for (var dj = 0; dj < current; dj++) past += durations[dj];
+    startTime = Date.now() - past;
+  }
+
+  // 进度条动画循环
+  function tick() {
+    updateProgress();
+    requestAnimationFrame(tick);
+  }
+
+  function start() {
+    current = -1;
+    nextScene();
+    requestAnimationFrame(tick);
+  }
+
+  window.restart = function() {
+    clearTimeout(timer);
+    current = -1;
+    startTime = Date.now();
+    showScene(0);
+    current = 0;
+    startTime = Date.now();
+    timer = setTimeout(function() { restart(); }, durations[0]);
+    // 更干净的重启
+    clearTimeout(timer);
+    current = -1;
+    for (var si = 0; si < scenes.length; si++) {
+      document.getElementById(scenes[si]).classList.remove('active');
+    }
+    start();
+  };
+
+  start();
+})();
+</script>
+
+</body>
+</html>
