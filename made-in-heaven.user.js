@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         made in heaven
 // @namespace    https://github.com/omegapaopao/made-in-heaven
-// @version      1.0.0
+// @version      1.1.0
 // @description  网页视频倍速控制 — 自动识别视频，精致面板，快捷键操控。
 // @author       omegapaopao
 // @match        *://*/*
@@ -241,6 +241,10 @@
           '</div>' +
           // 预设倍速
           '<div class="mih-row" id="mih-presets">' + presetBtns + '</div>' +
+          // 自定义倍速输入
+          '<div id="mih-custom-row">' +
+            '<input id="mih-custom" type="number" step="0.01" min="0.1" max="16" placeholder="输入任意倍速后回车..." title="输入任意倍速后按回车确认">' +
+          '</div>' +
         '</div>' +
       '</div>';
 
@@ -270,6 +274,18 @@
         speedPreset(parseFloat(this.dataset.rate));
       });
     }
+
+    // 自定义倍速输入
+    panel.querySelector('#mih-custom').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var val = parseFloat(this.value);
+        if (isFinite(val) && val >= 0.1 && val <= 16) {
+          setSpeed(val);
+        }
+        this.value = '';
+        e.preventDefault();
+      }
+    });
 
     // 控制按钮
     var ctrls = panel.querySelectorAll('.mih-ctrl');
@@ -383,7 +399,7 @@
   // ╚══════════════════════════════════════════╝
 
   function init() {
-    log('made in heaven v1.0.0 — by omegapaopao');
+    log('made in heaven v1.1.0 — by omegapaopao');
 
     // 注入样式
     var css = document.createElement('style');
@@ -498,6 +514,24 @@
         'background:linear-gradient(135deg,rgba(167,139,250,0.3),rgba(129,140,248,0.3));' +
         'color:#fff;border-color:rgba(167,139,250,0.5);' +
         'box-shadow:0 0 12px rgba(167,139,250,0.2);' +
+      '}' +
+      // 自定义倍速输入
+      '#mih-custom-row{' +
+        'display:flex;justify-content:center;margin-bottom:4px;' +
+      '}' +
+      '#mih-custom{' +
+        'width:100%;padding:6px 10px;border-radius:6px;' +
+        'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);' +
+        'color:rgba(255,255,255,0.6);font-size:11px;text-align:center;' +
+        'outline:none;transition:all 0.2s;font-family:inherit;' +
+        'box-sizing:border-box;' +
+      '}' +
+      '#mih-custom:focus{' +
+        'background:rgba(255,255,255,0.08);border-color:rgba(167,139,250,0.4);' +
+        'color:#fff;box-shadow:0 0 8px rgba(167,139,250,0.15);' +
+      '}' +
+      '#mih-custom::placeholder{' +
+        'color:rgba(255,255,255,0.2);' +
       '}' +
       // 小圆点
       '#mih-dot{' +
