@@ -192,16 +192,55 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 32px 24px;
+    padding: 40px 32px;
     margin: 28px 0;
-    font-family: "SF Mono", "Cascadia Code", monospace;
-    font-size: 13px;
-    line-height: 1.9;
-    overflow-x: auto;
-    white-space: pre;
-    color: rgba(200,200,212,0.65);
   }
-  .arch-diagram .hl { color: var(--accent); }
+  .arch-flow {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .arch-row {
+    display: flex; gap: 16px; align-items: center; justify-content: center;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    background: rgba(167,139,250,0.06);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 6px;
+    padding: 14px 20px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .arch-box .title {
+    font-family: "SF Mono", "Cascadia Code", monospace;
+    font-size: 13px; font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .arch-box .sub {
+    font-size: 12px; color: rgba(200,200,212,0.4);
+    font-family: system-ui, sans-serif;
+  }
+  .arch-arrow {
+    color: rgba(167,139,250,0.35);
+    font-size: 20px;
+    text-align: center;
+    padding: 4px 0;
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0.2em;
+  }
+  .arch-arrow-row {
+    display: flex; align-items: center; gap: 12px;
+    color: rgba(167,139,250,0.35);
+    font-size: 18px;
+    font-family: system-ui, sans-serif;
+  }
+  .arch-label {
+    font-family: "SF Mono", "Cascadia Code", monospace;
+    font-size: 11px;
+    color: rgba(200,200,212,0.35);
+    text-align: center;
+    padding: 8px 0;
+  }
 
   /* ── 引用块 ── */
   .blockquote {
@@ -325,26 +364,34 @@
     <p>MiH 由四个核心模块构成，各模块通过共享状态对象松耦合通信。</p>
 
     <div class="arch-diagram">
-┌─────────────────────────────────────────────────────────┐
-│  <span class="hl">made in heaven</span>  —  System Architecture                    │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────┐   ┌──────────┐   ┌──────────────────┐    │
-│  │  <span class="hl">IVD</span>      │   │  <span class="hl">Event</span>     │   │  <span class="hl">Turbo Engine</span>     │    │
-│  │  Video    │   │  Capture  │   │  Canvas Frame    │    │
-│  │  Discovery│   │  Layer    │   │  Compensation    │    │
-│  └─────┬─────┘   └─────┬─────┘   └────────┬─────────┘    │
-│        │               │                  │              │
-│        └───────────────┼──────────────────┘              │
-│                        │                                 │
-│                  ┌─────▼─────┐                           │
-│                  │  <span class="hl">UI Panel</span>  │                           │
-│                  │  Frosted   │                           │
-│                  │  Glass     │                           │
-│                  └───────────┘                           │
-│                                                         │
-│  Flow: Scan → Select → (Native | Turbo) → Render → UI  │
-└─────────────────────────────────────────────────────────┘</div>
+      <div class="arch-flow">
+        <div class="arch-row">
+          <div class="arch-box">
+            <div class="title">IVD Module</div>
+            <div class="sub">Video Discovery</div>
+          </div>
+          <div class="arch-box">
+            <div class="title">Event Layer</div>
+            <div class="sub">Capture Phase</div>
+          </div>
+          <div class="arch-box">
+            <div class="title">Turbo Engine</div>
+            <div class="sub">Canvas Frame Skip</div>
+          </div>
+        </div>
+        <div class="arch-arrow">|   |   |</div>
+        <div class="arch-arrow">v   v   v</div>
+        <div class="arch-row">
+          <div class="arch-box">
+            <div class="title">UI Panel</div>
+            <div class="sub">Frosted Glass Renderer</div>
+          </div>
+        </div>
+        <div class="arch-label" style="margin-top:16px;">
+          Scan &rarr; Select &rarr; (Native | Turbo) &rarr; Render &rarr; UI Refresh
+        </div>
+      </div>
+    </div>
 
     <table class="spec-table">
       <tr><td>IVD Module</td><td>基于 <code>querySelectorAll('video')</code> 的轮询式发现，合并新旧列表以保持跨 SPA 路由的连续性。过滤不可见元素（< 40px），每 2s 周期扫描。</td></tr>
