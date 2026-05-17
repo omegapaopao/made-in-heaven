@@ -566,7 +566,7 @@
   var ctx = canvas.getContext('2d');
 
   var dots = [];
-  var SPACING = 28;
+  var SPACING = 40;
   var mouse = { x: -9999, y: -9999, prevX: -9999, prevY: -9999 };
   var RIPPLE_RADIUS = 160;
   var cols, rows;
@@ -638,9 +638,9 @@
       var d = dots[i];
 
       // 自然微漂
-      d.life += 0.008;
-      var driftX = Math.sin(d.life * 1.3 + d.oy * 0.01) * 0.3;
-      var driftY = Math.cos(d.life * 1.7 + d.ox * 0.01) * 0.3;
+      d.life += 0.005;
+      var driftX = Math.sin(d.life * 1.3 + d.oy * 0.01) * 0.12;
+      var driftY = Math.cos(d.life * 1.7 + d.ox * 0.01) * 0.12;
 
       // 与鼠标的距离
       var dx = d.x - mx;
@@ -651,7 +651,7 @@
       if (dist < RIPPLE_RADIUS && mouseSpeed > 0.5) {
         var force = (1 - dist / RIPPLE_RADIUS);
         force = force * force; // 平方衰减, 近处力大
-        force = force * mouseSpeed * 0.08;
+        force = force * mouseSpeed * 0.03;
 
         var nx = dist > 0.5 ? dx / dist : 0;
         var ny = dist > 0.5 ? dy / dist : 0;
@@ -661,33 +661,26 @@
       }
 
       // 弹簧回归原点 + 微漂
-      var spring = 0.06;
+      var spring = 0.04;
       d.vx += (d.ox + driftX - d.x) * spring;
       d.vy += (d.oy + driftY - d.y) * spring;
 
       // 阻尼
-      d.vx *= 0.88;
-      d.vy *= 0.88;
-
-      // 速度限制
-      var speed = Math.sqrt(d.vx * d.vx + d.vy * d.vy);
-      if (speed > 6) {
-        d.vx = d.vx / speed * 6;
-        d.vy = d.vy / speed * 6;
-      }
+      d.vx *= 0.85;
+      d.vy *= 0.85;
 
       d.x += d.vx;
       d.y += d.vy;
 
       // 绘制
-      var alpha = 0.45;
-      var size = 1.6;
+      var alpha = 0.10;
+      var size = 1.0;
 
-      // 靠近鼠标的点更亮
+      // 靠近鼠标的点微微变亮
       if (dist < RIPPLE_RADIUS) {
         var glow = (1 - dist / RIPPLE_RADIUS);
-        alpha = 0.45 + glow * 0.55;
-        size = 1.6 + glow * 2.4;
+        alpha = 0.10 + glow * 0.18;
+        size = 1.0 + glow * 1.0;
       }
 
       ctx.beginPath();
