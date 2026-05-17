@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         made in heaven
 // @namespace    https://github.com/omegapaopao/made-in-heaven
-// @version      1.2.0
+// @version      1.3.0
 // @description  网页视频倍速控制 — 自动识别视频，精致面板，快捷键操控。
 // @author       omegapaopao
 // @match        *://*/*
@@ -27,6 +27,16 @@
   var curIdx = 0;
   var panel = null;
   var drag = { on: false, sx: 0, sy: 0, px: 0, py: 0 };
+
+  // 超高速模式 (倍速 > 16 时启用 Canvas 绕过浏览器限制)
+  var TURBO = {
+    active: false,
+    canvas: null,
+    ctx: null,
+    animId: null,
+    lastTime: 0,
+    lastSeek: 0,
+  };
 
   // ── 工具 ──────────────────────────────────
   function log() {
@@ -78,6 +88,9 @@
     videos = merged;
     if (curIdx >= videos.length) curIdx = Math.max(0, videos.length - 1);
 
+    // 视频消失则关闭 turbo
+    if (TURBO.active && !curEl()) turboExit(null);
+
     if (isNew && found.length > 0) {
       setTimeout(function () {
         var v = found[0];
@@ -105,7 +118,18 @@
     r = Math.max(0.1, Math.min(50, r));
     CFG.speed = r;
     var el = curEl();
-    if (el) el.playbackRate = r;
+    if (!el) { refresh(); return; }
+
+    if (r > 16) {
+      el.playbackRate = 16;
+      if (!TURBO.active) turboEnter(el);
+      // 更新徽章文字
+      var badge = document.getElementById('mih-turbo-badge');
+      if (badge) badge.textContent = '⚡ TURBO ' + r.toFixed(1) + '×';
+    } else {
+      if (TURBO.active) turboExit(el);
+      el.playbackRate = r;
+    }
     refresh();
   }
 
@@ -113,6 +137,114 @@
 
   function speedUp() { setSpeed(CFG.speed + 0.25); }
   function speedDown() { setSpeed(CFG.speed - 0.25); }
+
+  // ── 超高速引擎 (Canvas + 帧跳进, 突破浏览器 16× 限制) ──
+  function turboEnter(video) {
+    if (TURBO.active) return;
+
+    var rect = video.getBoundingClientRect();
+
+    var canvas = document.createElement('canvas');
+    canvas.id = 'mih-turbo-canvas';
+    canvas.style.cssText =
+      'position:fixed;z-index:2147483646;pointer-events:none;' +
+      'image-rendering:auto;';
+    canvas.style.left = rect.left + 'px';
+    canvas.style.top  = rect.top  + 'px';
+    canvas.width  = rect.width;
+    canvas.height = rect.height;
+    document.body.appendChild(canvas);
+
+    var badge = document.createElement('div');
+    badge.id = 'mih-turbo-badge';
+    badge.textContent = '⚡ TURBO ' + CFG.speed.toFixed(1) + '×';
+    badge.style.cssText =
+      'position:fixed;z-index:2147483647;' +
+      'background:rgba(0,0,0,0.85);color:#fbbf24;' +
+      'padding:4px 10px;border-radius:4px;' +
+      'font-size:12px;font-weight:700;font-family:system-ui,sans-serif;' +
+      'pointer-events:none;border:1px solid rgba(251,191,36,0.3);';
+    badge.style.left = (rect.left + 8) + 'px';
+    badge.style.top  = (rect.top  + 8) + 'px';
+    document.body.appendChild(badge);
+
+    video.style.opacity = '0';
+    video.muted = true;
+
+    TURBO.active    = true;
+    TURBO.canvas    = canvas;
+    TURBO.ctx       = canvas.getContext('2d');
+    TURBO.lastTime  = performance.now();
+    TURBO.lastSeek  = performance.now();
+
+    turboTick(video);
+    log('Turbo 引擎启动 — ' + CFG.speed.toFixed(1) + '×');
+  }
+
+  function turboExit(video) {
+    if (!TURBO.active) return;
+    cancelAnimationFrame(TURBO.animId);
+
+    if (TURBO.canvas) { TURBO.canvas.remove(); TURBO.canvas = null; TURBO.ctx = null; }
+    var badge = document.getElementById('mih-turbo-badge');
+    if (badge) badge.remove();
+
+    if (video) {
+      video.style.opacity = '';
+      video.muted = CFG.mute;
+      video.playbackRate = CFG.speed;
+    }
+    TURBO.active = false;
+    log('Turbo 引擎关闭');
+  }
+
+  function turboTick(video) {
+    function frame(now) {
+      if (!TURBO.active || !video) return;
+
+      if (video.paused || video.ended) {
+        TURBO.animId = requestAnimationFrame(frame);
+        return;
+      }
+
+      var canvas = TURBO.canvas;
+      var ctx    = TURBO.ctx;
+
+      // 画布跟随视频移动 & 自适应大小
+      var rect = video.getBoundingClientRect();
+      canvas.style.left = rect.left + 'px';
+      canvas.style.top  = rect.top  + 'px';
+      if (Math.abs(canvas.width - rect.width) > 1 || Math.abs(canvas.height - rect.height) > 1) {
+        canvas.width  = rect.width;
+        canvas.height = rect.height;
+      }
+
+      // 计算额外需要跳过的时间 (targetSpeed - 16)
+      var elapsedSec = (now - TURBO.lastSeek) / 1000;
+      if (elapsedSec > 0.15) {
+        var extra = elapsedSec * (CFG.speed - 16);
+        if (extra > 0.01 && isFinite(video.duration)) {
+          video.currentTime = Math.min(video.duration, video.currentTime + extra);
+        }
+        TURBO.lastSeek = now;
+      }
+
+      // 绘制当前帧
+      try { ctx.drawImage(video, 0, 0, canvas.width, canvas.height); } catch (_) {}
+
+      // 徽章跟随
+      var badge = document.getElementById('mih-turbo-badge');
+      if (badge) {
+        badge.style.left = (rect.left + 8) + 'px';
+        badge.style.top  = (rect.top  + 8) + 'px';
+        badge.textContent = '⚡ TURBO ' + CFG.speed.toFixed(1) + '×';
+      }
+
+      TURBO.animId = requestAnimationFrame(frame);
+    }
+
+    TURBO.animId = requestAnimationFrame(frame);
+  }
 
   // ── 操作 ──────────────────────────────────
   function act(action) {
@@ -126,10 +258,10 @@
         if (el.paused) el.play().catch(function () {});
         else el.pause();
         break;
-      case 'fwd':   el.currentTime = Math.min(el.duration || Infinity, el.currentTime + CFG.skip); break;
-      case 'bwd':   el.currentTime = Math.max(0, el.currentTime - CFG.skip); break;
-      case 'lfwd':  el.currentTime = Math.min(el.duration || Infinity, el.currentTime + CFG.longSkip); break;
-      case 'lbwd':  el.currentTime = Math.max(0, el.currentTime - CFG.longSkip); break;
+      case 'fwd':   el.currentTime = Math.min(el.duration || Infinity, el.currentTime + CFG.skip); TURBO.lastSeek = performance.now(); break;
+      case 'bwd':   el.currentTime = Math.max(0, el.currentTime - CFG.skip); TURBO.lastSeek = performance.now(); break;
+      case 'lfwd':  el.currentTime = Math.min(el.duration || Infinity, el.currentTime + CFG.longSkip); TURBO.lastSeek = performance.now(); break;
+      case 'lbwd':  el.currentTime = Math.max(0, el.currentTime - CFG.longSkip); TURBO.lastSeek = performance.now(); break;
       case 'fs':
         if (document.fullscreenElement) document.exitFullscreen();
         else el.requestFullscreen().catch(function () {});
@@ -368,11 +500,11 @@
         '  ' + fmt(el.currentTime) + ' / ' + fmt(el.duration);
       if (pp) pp.textContent = el.paused ? '▶' : '⏸';
       if (bar) bar.style.width = el.duration ? ((el.currentTime / el.duration) * 100) + '%' : '0%';
-      if (spd) spd.textContent = (el.playbackRate || 1).toFixed(2) + '×';
+      if (spd) spd.textContent = CFG.speed.toFixed(2) + '×';
       if (mute) mute.textContent = el.muted ? '🔈' : '🔇';
 
       // 高亮当前预设
-      var curRate = el.playbackRate || 1;
+      var curRate = CFG.speed;
       var spBtns = panel.querySelectorAll('.mih-sp');
       for (var sb = 0; sb < spBtns.length; sb++) {
         var btnRate = parseFloat(spBtns[sb].dataset.rate);
@@ -399,7 +531,7 @@
   // ╚══════════════════════════════════════════╝
 
   function init() {
-    log('made in heaven v1.2.0 — by omegapaopao');
+    log('made in heaven v1.3.0 — by omegapaopao');
 
     // 注入样式
     var css = document.createElement('style');
